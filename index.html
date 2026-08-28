@@ -39,7 +39,7 @@
     .button.primary { color:#fff; background:var(--green); border-color:var(--green); }
     .button.danger { color:#fff; background:var(--coral); border-color:var(--coral); }
     .button:disabled { opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
-    .layout { max-width:1500px; margin:0 auto; display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:18px; align-items:start; }
+    .layout { max-width:1500px; margin:0 auto; display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:18px; align-items:start; transition:grid-template-columns .2s ease; }
     .panel { background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow); }
     .battle-panel { overflow:hidden; }
     .battle-head { padding:20px 22px 16px; border-bottom:1px solid var(--line); background:linear-gradient(120deg, #fffdf7 0%, #f3f8f3 100%); }
@@ -57,10 +57,14 @@
     .objective { display:flex; gap:8px; align-items:center; color:var(--muted); font-size:13px; }
     .objective b { color:var(--ink); }
     .wave-badge { background:var(--coral-soft); color:#9a3d2e; border-radius:999px; padding:6px 10px; font-size:12px; font-weight:800; }
-    .enemy-zone { min-height:235px; border:1px dashed #bfcfc6; background:#f6f8f2; border-radius:14px; padding:18px; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:14px; position:relative; }
+    .enemy-zone { min-height:235px; border:1px dashed #bfcfc6; background:#f6f8f2; border-radius:14px; padding:34px 18px 18px; display:flex; flex-direction:column; align-items:stretch; justify-content:center; gap:11px; position:relative; }
     .enemy-zone:before { content:"ENEMY ZONE"; position:absolute; left:14px; top:11px; font-size:10px; letter-spacing:.12em; color:#8b9c94; font-weight:800; }
     .enemy { width:142px; min-height:145px; border:1px solid #d5ddd6; border-radius:13px; background:#fff; padding:13px; position:relative; box-shadow:0 8px 16px rgba(23,34,31,.05); }
     .enemy.boss { width:180px; border-color:#d7b15d; background:#fff8df; }
+    .enemy.inactive { opacity:.58; transform:scale(.94); }
+    .enemy-row { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; position:relative; padding-top:18px; }
+    .enemy-row.back { padding-top:14px; border-top:1px dashed #d8dfd7; }
+    .row-label { position:absolute; top:0; left:0; color:var(--muted); font-size:9px; font-weight:800; }
     .enemy.dead { opacity:.22; filter:grayscale(1); }
     .enemy-mark { width:48px; height:48px; border-radius:14px; display:grid; place-items:center; color:#fff; font-size:13px; font-weight:900; letter-spacing:.06em; margin-bottom:8px; }
     .enemy.basic .enemy-mark { background:var(--blue); }
@@ -68,6 +72,8 @@
     .enemy.boss .enemy-mark { background:var(--yellow); color:#513b09; }
     .enemy-name { font-weight:800; font-size:14px; }
     .enemy-meta { color:var(--muted); font-size:11px; margin:3px 0 8px; }
+    .enemy-vitals { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; color:var(--muted); font-size:10px; }
+    .enemy-vitals strong { color:var(--ink); font-size:12px; }
     .hp-track { height:7px; border-radius:99px; background:#e3e8e3; overflow:hidden; }
     .hp-fill { height:100%; background:var(--coral); border-radius:inherit; transition:width .22s; }
     .enemy-status { display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; min-height:19px; }
@@ -86,7 +92,7 @@
     .player-top { display:flex; justify-content:space-between; gap:10px; align-items:center; }
     .player-name { font-weight:900; }
     .player-state { color:var(--muted); font-size:11px; }
-    .stat-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:13px; }
+    .stat-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:13px; }
     .stat { background:#fff; border:1px solid #e0e8e1; border-radius:9px; padding:8px; }
     .stat span { display:block; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
     .stat strong { display:block; margin-top:3px; font-size:19px; }
@@ -96,6 +102,11 @@
     .turn-card .label { color:#876b1f; font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
     .turn-number { font-size:31px; font-weight:900; letter-spacing:-.05em; margin:3px 0 8px; }
     .turn-tip { color:#766335; font-size:12px; line-height:1.5; }
+    .combo-track { display:flex; align-items:center; gap:5px; margin:8px 0; }
+    .combo-track span { width:25px; height:25px; display:grid; place-items:center; border:1px solid #d9c98f; border-radius:50%; color:#75632e; font-size:11px; font-weight:900; }
+    .combo-track span.done { color:#fff; background:var(--green); border-color:var(--green); }
+    .combo-track span.next { border-color:var(--coral); color:var(--coral); box-shadow:0 0 0 2px rgba(221,98,73,.12); }
+    .combo-track i { color:#a89559; font-style:normal; font-size:10px; }
     .hand-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:22px 0 10px; }
     .hand-head h2 { font-size:16px; letter-spacing:-.02em; }
     .hand-head small { color:var(--muted); }
@@ -105,26 +116,34 @@
     .card:hover:not(:disabled) { transform:translateY(-3px); border-color:var(--green); box-shadow:0 10px 18px rgba(23,34,31,.1); }
     .card:disabled { opacity:.42; cursor:not-allowed; }
     .card-art { height:43px; border-radius:9px; display:flex; align-items:flex-end; justify-content:space-between; padding:8px; color:#fff; font-weight:900; font-size:11px; letter-spacing:.08em; }
-    .card.attack .card-art { background:var(--coral); }
-    .card.defense .card-art { background:var(--green); }
-    .card.resource .card-art { background:var(--blue); }
-    .card.boost .card-art { background:#9a6c2d; }
-    .card.wild .card-art { background:#765b98; }
-    .card.synth .card-art { background:var(--yellow); color:#533b08; }
+    .card.attack .card-art, .card-art.attack { background:#c95445; }
+    .card.defense .card-art, .card-art.defense { background:#3478ad; }
+    .card.boost .card-art, .card-art.boost { background:#b88629; }
+    .card.resource .card-art, .card-art.resource { background:#74579a; }
+    .card.wild .card-art, .card-art.wild { background:#268565; }
+    .card-art.arcana, .card-art.artifact { background:#22241f; }
+    .card-art.gem, .card-art.function, .card-art.item { background:#80663a; }
     .cost { background:rgba(255,255,255,.9); color:var(--ink); border-radius:6px; padding:2px 5px; font-size:12px; }
     .card-name { font-size:13px; font-weight:900; }
     .card-type { color:var(--muted); font-size:10px; }
+    .card-gems { align-self:flex-start; border-radius:5px; padding:3px 5px; background:#fff1cb; color:#765819; font-size:9px; font-weight:800; }
     .card-mechanics { align-self:flex-start; border:1px solid #d8e5df; border-radius:5px; padding:3px 5px; background:#f1f7f4; color:#356253; font-size:9px; font-weight:800; }
     .card-desc { color:#4d5d56; font-size:11px; line-height:1.4; margin-top:auto; }
     .preview-button { width:100%; min-height:28px; border:1px solid #d7dfd8; border-radius:7px; background:#f4f8f5; color:#356253; font-size:10px; font-weight:800; }
     .preview-button:hover, .preview-button:focus-visible { border-color:var(--green); background:var(--green-soft); }
-    .side { display:flex; flex-direction:column; gap:14px; position:sticky; top:18px; }
+    .side { min-width:0; display:flex; flex-direction:column; gap:14px; position:sticky; top:18px; }
     .side-section { padding:17px; }
-    .side-section h3 { font-size:14px; margin-bottom:12px; }
+    .section-toggle { width:100%; min-height:28px; padding:0; border:0; background:transparent; color:var(--ink); display:flex; align-items:center; justify-content:space-between; gap:10px; text-align:left; font-size:14px; font-weight:900; }
+    .section-toggle:hover, .section-toggle:focus-visible { color:var(--green); }
+    .section-toggle-icon { width:20px; height:20px; display:grid; place-items:center; border:1px solid var(--line); border-radius:5px; font-size:11px; }
+    .side-section:not(.collapsed) .section-toggle { margin-bottom:12px; }
+    .side-section.collapsed > :not(.section-toggle) { display:none !important; }
     .side-row { display:flex; justify-content:space-between; gap:12px; font-size:12px; padding:8px 0; border-bottom:1px solid #edf0eb; }
     .side-row:last-child { border-bottom:0; }
     .side-row span { color:var(--muted); }
     .side-row strong { text-align:right; }
+    .deck-list-row { align-items:flex-start; }
+    .deck-list-row strong { max-width:210px; line-height:1.5; overflow-wrap:anywhere; }
     .slider { margin:10px 0 14px; }
     .slider label { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-bottom:6px; }
     input[type=range] { width:100%; accent-color:var(--green); }
@@ -134,6 +153,21 @@
     .recipe { border:1px solid #eadfc5; background:#fffaf0; border-radius:10px; padding:10px; }
     .recipe strong { display:block; font-size:12px; }
     .recipe small { display:block; color:var(--muted); line-height:1.4; margin-top:4px; }
+    .catalog-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-bottom:10px; }
+    .catalog-summary span { display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid var(--line); padding:6px 2px; color:var(--muted); font-size:11px; }
+    .catalog-summary b { color:var(--ink); }
+    .catalog-group { border-top:1px solid var(--line); padding-top:12px; }
+    .catalog-group:first-child { border-top:0; padding-top:0; }
+    .catalog-group-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:7px; }
+    .catalog-group-head strong { font-size:13px; }
+    .catalog-group-head span { color:var(--muted); font-size:11px; }
+    .catalog-rows { display:flex; flex-direction:column; }
+    .catalog-row { display:grid; grid-template-columns:minmax(130px,.8fr) minmax(180px,1.5fr) auto; gap:12px; align-items:center; padding:8px 0; border-top:1px dashed var(--line); }
+    .catalog-row:first-child { border-top:0; }
+    .catalog-row strong, .catalog-row small { display:block; }
+    .catalog-row small, .catalog-row p, .catalog-row > span { color:var(--muted); font-size:11px; line-height:1.4; }
+    .catalog-row > span { white-space:nowrap; color:#6d5928; font-weight:800; }
+    .synth-section-title { margin-top:6px; font-size:15px; }
     .log { max-height:290px; overflow:auto; display:flex; flex-direction:column; gap:7px; }
     .log-line { font-size:11px; line-height:1.35; padding:7px 8px; border-radius:7px; background:#f5f7f2; color:#4a5a53; }
     .log-line b { color:var(--green); }
@@ -142,14 +176,6 @@
     .mechanic-summary span, .mechanic-summary strong { display:block; }
     .mechanic-summary span { color:var(--muted); font-size:9px; }
     .mechanic-summary strong { margin-top:3px; font-size:14px; }
-    .formula-checks { display:flex; flex-direction:column; gap:7px; }
-    .check-row { display:grid; grid-template-columns:42px 1fr; gap:8px; align-items:start; padding:8px; border:1px solid #e2e8e2; border-radius:7px; background:#f7f9f5; }
-    .check-row > span { border-radius:4px; padding:3px 4px; text-align:center; font-size:9px; font-weight:900; }
-    .check-row.pass > span { color:#1d634c; background:#dceee8; }
-    .check-row.fail > span { color:#8f382a; background:#fae0d7; }
-    .check-row strong, .check-row small { display:block; }
-    .check-row strong { font-size:11px; }
-    .check-row small { color:var(--muted); font-size:9px; line-height:1.35; margin-top:2px; }
     .modal-backdrop { position:fixed; inset:0; z-index:10; background:rgba(23,34,31,.42); display:grid; place-items:center; padding:16px; }
     .modal { width:min(600px, 100%); max-height:calc(100vh - 32px); overflow:auto; background:var(--panel); border-radius:18px; border:1px solid var(--line); box-shadow:0 24px 60px rgba(0,0,0,.22); padding:21px; }
     .modal-head { display:flex; justify-content:space-between; gap:14px; align-items:start; margin-bottom:15px; }
@@ -158,50 +184,70 @@
     .reward-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
     .reward { border:1px solid var(--line); background:#fff; border-radius:11px; padding:11px; min-height:130px; text-align:left; }
     .reward:hover { border-color:var(--green); box-shadow:0 9px 16px rgba(23,34,31,.08); }
+    .reward .card-art { height:38px; margin-bottom:9px; }
+    .reward > small, .reward > p, .reward > b { display:block; }
+    .reward > small { color:var(--muted); font-size:10px; margin-top:4px; }
+    .reward > p { color:#4d5d56; font-size:11px; line-height:1.4; margin-top:7px; }
+    .reward > b { color:var(--green); font-size:11px; margin-top:10px; }
+    .hud-strip { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:14px; }
+    .hud-item { border:1px solid var(--line); background:rgba(255,255,255,.72); border-radius:8px; padding:8px 10px; }
+    .hud-item > div { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:10px; }
+    .hud-item strong { color:var(--ink); }
+    .xp-track { height:4px; margin-top:6px; border-radius:99px; background:#dfe5dd; overflow:hidden; }
+    .xp-fill { height:100%; background:#b88629; }
+    .settlement-summary { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .settlement-summary div { padding:11px; border:1px solid var(--line); border-radius:8px; background:#f7f8f3; }
+    .settlement-summary span, .settlement-summary strong { display:block; }
+    .settlement-summary span { color:var(--muted); font-size:10px; }
+    .settlement-summary strong { margin-top:3px; font-size:18px; }
+    .settlement-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:8px; }
+    .gem-row { display:grid; grid-template-columns:90px minmax(0,1fr) auto; align-items:center; gap:7px; margin-top:8px; }
+    .gem-row span { font-size:11px; font-weight:800; }
+    .gem-row select { min-width:0; border:1px solid var(--line); border-radius:7px; padding:7px; background:#fff; }
     .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:20; background:var(--ink); color:#fff; padding:10px 15px; border-radius:999px; font-size:12px; box-shadow:var(--shadow); }
     .hidden { display:none !important; }
     @media (max-width: 1050px) { .layout { grid-template-columns:1fr; } .side { position:static; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); } .side .wide { grid-column:1 / -1; } }
-    @media (max-width: 680px) { .app-shell { padding:14px 10px 28px; } .topbar { align-items:flex-start; } .top-actions .pill { display:none; } .battle-head, .arena { padding-left:14px; padding-right:14px; } .battle-title { display:block; } .progress { margin-top:13px; min-width:0; } .player-zone { grid-template-columns:1fr; } .stat-grid { grid-template-columns:repeat(2,1fr); } .side { display:flex; } .reward-grid { grid-template-columns:1fr; } .enemy { width:calc(50% - 8px); min-width:130px; } .enemy.boss { width:100%; } }
+    @media (max-width: 680px) { .app-shell { padding:14px 10px 28px; } .topbar { align-items:flex-start; } .top-actions .pill { display:none; } .battle-head, .arena { padding-left:14px; padding-right:14px; } .battle-title { display:block; } .progress { margin-top:13px; min-width:0; } .player-zone { grid-template-columns:1fr; } .stat-grid { grid-template-columns:repeat(2,1fr); } .side { display:flex; } .reward-grid { grid-template-columns:1fr; } .enemy { width:calc(50% - 8px); min-width:130px; } .enemy.boss { width:100%; } .settlement-summary { grid-template-columns:repeat(2,1fr); } .gem-row, .catalog-row { grid-template-columns:1fr; gap:4px; } }
   </style>
 </head>
 <body>
-  <main class="app-shell">
+  <main class="app-shell" id="game-screen">
     <header class="topbar">
-      <div class="brand"><div class="brand-mark">CB</div><div><strong>后室卡牌数值实验室</strong><small>三关试玩原型 · 可复现战斗 · 参数可调</small></div></div>
-      <div class="top-actions"><span class="pill" id="run-status">RUN 001 · 进行中</span><button class="button" id="restart-btn">重新开始</button><button class="button primary" id="export-btn">导出日志</button></div>
+      <div class="brand"><div class="brand-mark">BS</div><div><strong>后室：卡牌生存</strong><small>三关数值实验室 · 固定种子 · 参数可调</small></div></div>
+      <div class="top-actions"><span class="pill" id="run-status">RUN 001 · 准备</span><button class="button" id="home-btn">返回</button><button class="button" id="restart-btn">重新开始</button><button class="button primary" id="export-btn">导出日志</button></div>
     </header>
 
-    <section class="layout">
+    <section class="layout" id="main-layout">
       <section class="panel battle-panel">
         <div class="battle-head">
           <div class="eyebrow">Backrooms / Card Balance Lab</div>
-          <div class="battle-title"><div><h1 id="stage-title">第 1 关 · 黄色走廊</h1><p class="stage-sub" id="stage-subtitle">基础卡牌循环：攻击、防御、资源</p></div><div class="progress" id="stage-progress"><span class="active"></span><span></span><span></span></div></div>
+          <div class="battle-title"><div><h1 id="stage-title">第 1 关 · 黄色走廊</h1><p class="stage-sub" id="stage-subtitle">基础费用曲线：0 费与 1 费</p></div><div class="progress" id="stage-progress"><span class="active"></span><span></span><span></span></div></div>
+          <div class="hud-strip"><div class="hud-item"><div><span>生命</span><strong id="top-hp-value">20 / 20</strong></div></div><div class="hud-item"><div><span>经验</span><strong id="top-xp-value">0 / 18</strong></div><div class="xp-track"><div class="xp-fill" id="top-xp-fill" style="width:0"></div></div></div></div>
         </div>
         <div class="arena">
           <div class="objective-row"><div class="objective">当前目标：<b id="objective-text">击败本波全部敌人</b></div><span class="wave-badge" id="wave-badge">WAVE 1 / 2</span></div>
           <div class="enemy-zone" id="enemy-zone"></div>
           <div class="player-zone">
-            <div class="player-card"><div class="player-top"><div class="player-name">测试者 · YIDUO</div><div class="player-state" id="player-state">准备行动</div></div><div class="hp-track" style="margin-top:11px"><div class="hp-fill" id="player-hp-fill" style="width:100%"></div></div><div class="stat-grid"><div class="stat"><span>生命</span><strong id="hp-value">20 / 20</strong></div><div class="stat mana"><span>法力</span><strong id="mana-value">3 / 3</strong></div><div class="stat shield"><span>防御</span><strong id="def-value">0</strong></div><div class="stat"><span>连击</span><strong id="combo-value">0</strong></div></div></div>
-            <div class="turn-card"><div><div class="label">Turn State</div><div class="turn-number" id="turn-value">TURN 1</div><p class="turn-tip" id="turn-tip">选择手牌出牌，结束回合后敌人会行动。</p></div><button class="button danger" id="end-turn-btn">结束回合</button></div>
+            <div class="player-card"><div class="player-top"><div class="player-name">测试者</div><div class="player-state" id="player-state">等待选择</div></div><div class="hp-track" style="margin-top:11px"><div class="hp-fill" id="player-hp-fill" style="width:100%"></div></div><div class="stat-grid"><div class="stat"><span>生命</span><strong id="hp-value">20 / 20</strong></div><div class="stat mana"><span>法力</span><strong id="mana-value">2 / 2</strong></div><div class="stat shield"><span>防御</span><strong id="def-value">0</strong></div><div class="stat"><span>连击</span><strong id="combo-value">0 · ×1.00</strong></div><div class="stat"><span>经验</span><strong id="xp-value">0 / 18</strong></div><div class="stat"><span>等级</span><strong id="level-value">LV.1</strong></div></div></div>
+            <div class="turn-card"><div><div class="label">费用连击</div><div class="turn-number" id="turn-value">TURN 1</div><div class="combo-track" id="combo-track"><span class="next">0</span><i>→</i><span>1</span><i>→</i><span>2</span><i>→</i><span>3</span></div><p class="turn-tip" id="turn-tip">按 0→1→2→3 出牌形成倍率。</p></div><button class="button danger" id="end-turn-btn" disabled>结束回合</button></div>
           </div>
-          <div class="hand-head"><h2>当前手牌</h2><small id="hand-count">0 / 7</small></div>
+          <div class="hand-head"><h2>当前手牌</h2><small><span id="pile-count">抽牌 2 · 弃牌 0</span>　<span id="hand-count">3 / 3</span></small></div>
           <div class="hand" id="hand"></div>
         </div>
       </section>
 
-      <aside class="side">
-        <section class="panel side-section"><h3>本局状态</h3><div class="side-row"><span>随机种子</span><strong id="seed-value">001</strong></div><div class="side-row"><span>牌库 / 弃牌 / 销毁</span><strong id="deck-value">0 / 0 / 0</strong></div><div class="side-row"><span>已解锁</span><strong id="unlock-value">工作台</strong></div><div class="side-row"><span>本关实际伤害</span><strong id="damage-value">0</strong></div><div class="side-row"><span>其中溅射</span><strong id="splash-value">0</strong></div><div class="side-row"><span>过量伤害</span><strong id="overkill-value">0</strong></div><div class="side-row"><span>本关受到伤害</span><strong id="taken-value">0</strong></div></section>
-        <section class="panel side-section"><h3>伤害模型</h3><div class="mechanic-summary" id="mechanic-summary"></div><div class="slider"><label><span>普通伤害加成</span><b id="damage-bonus-label">+0%</b></label><input id="damage-bonus-slider" type="range" min="0" max="100" step="10" value="0" /></div><div class="slider"><label><span>额外发射数量</span><b id="shots-label">+0</b></label><input id="shots-slider" type="range" min="0" max="10" step="1" value="0" /></div><div class="slider"><label><span>溅射伤害</span><b id="splash-label">+0%</b></label><input id="splash-slider" type="range" min="0" max="100" step="5" value="0" /></div><div class="slider"><label><span>溅射固定分母</span><b id="splash-divisor-label">5</b></label><input id="splash-divisor-slider" type="range" min="1" max="8" step="1" value="5" /></div></section>
-        <section class="panel side-section"><h3>关卡调试</h3><div class="slider"><label><span>敌人生命倍率</span><b id="enemy-hp-label">1.0x</b></label><input id="enemy-hp-slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div><div class="slider"><label><span>敌人攻击倍率</span><b id="enemy-atk-label">1.0x</b></label><input id="enemy-atk-slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div><div class="slider"><label><span>初始法力</span><b id="mana-label">3</b></label><input id="mana-slider" type="range" min="1" max="8" step="1" value="3" /></div><div><label style="display:block;color:var(--muted);font-size:11px;margin-bottom:6px">随机种子</label><input type="text" id="seed-input" value="001" /></div><div class="side-actions" style="margin-top:12px"><button class="button" id="apply-debug-btn">应用参数</button><button class="button" id="skip-wave-btn">跳过本波</button></div></section>
-        <section class="panel side-section"><h3>视频公式校验</h3><div class="formula-checks" id="formula-checks"></div></section>
-        <section class="panel side-section"><h3>合成关系</h3><div class="synth-list"><div class="recipe"><strong>带刺球棒 · 费用 2</strong><small>木棍 + 工具包 + 工作台<br/>5 发 × 8 点多弹道伤害；暴击时治疗 2 点</small></div><div class="recipe"><strong>火焰喷射器 · 费用 3</strong><small>打火机 + 能量饮料 + 工作台<br/>225 点伤害；有概率击退</small></div></div><button class="button primary" style="width:100%;margin-top:11px" id="synth-btn">检查可合成卡</button></section>
-        <section class="panel side-section wide"><h3>事件日志</h3><div class="log" id="log"></div></section>
+      <aside class="side" id="side-toolbar">
+        <section class="panel side-section"><button class="section-toggle" type="button" data-section="run" aria-expanded="true"><span>本局状态</span><span class="section-toggle-icon" aria-hidden="true">−</span></button><div class="side-row"><span>随机种子</span><strong id="seed-value">001</strong></div><div class="side-row"><span>当前牌组总数</span><strong id="deck-total-value">0</strong></div><div class="side-row"><span>手牌</span><strong id="hand-zone-value">0</strong></div><div class="side-row"><span>抽牌堆</span><strong id="draw-pile-value">0</strong></div><div class="side-row"><span>弃牌堆</span><strong id="discard-value">0</strong></div><div class="side-row"><span>销毁区</span><strong id="destroyed-value">0</strong></div><div class="side-row deck-list-row"><span>抽牌堆剩余</span><strong id="deck-list-value">空</strong></div><div class="side-row"><span>进度</span><strong id="progress-value">0 波 / 0 击败 / 0 经验</strong></div><div class="side-row"><span>宝石库存</span><strong id="gem-value">无</strong></div><div class="side-row"><span>已解锁</span><strong id="unlock-value">连续行动、宝石锤子</strong></div><div class="side-row"><span>本关实际伤害</span><strong id="damage-value">0</strong></div><div class="side-row"><span>其中溅射</span><strong id="splash-value">0</strong></div><div class="side-row"><span>过量伤害</span><strong id="overkill-value">0</strong></div><div class="side-row"><span>本关受到伤害</span><strong id="taken-value">0</strong></div></section>
+        <section class="panel side-section"><button class="section-toggle" type="button" data-section="damage" aria-expanded="true"><span>伤害模型</span><span class="section-toggle-icon" aria-hidden="true">−</span></button><div class="mechanic-summary" id="mechanic-summary"></div><div class="slider"><label><span>普通伤害加成</span><b id="damage-bonus-label">+0%</b></label><input id="damage-bonus-slider" type="range" min="0" max="100" step="10" value="0" /></div><div class="slider"><label><span>额外发射数量</span><b id="shots-label">+0</b></label><input id="shots-slider" type="range" min="0" max="10" step="1" value="0" /></div><div class="slider"><label><span>溅射伤害</span><b id="splash-label">+0%</b></label><input id="splash-slider" type="range" min="0" max="100" step="5" value="0" /></div><div class="slider"><label><span>溅射固定分母</span><b id="splash-divisor-label">5</b></label><input id="splash-divisor-slider" type="range" min="1" max="8" step="1" value="5" /></div></section>
+        <section class="panel side-section"><button class="section-toggle" type="button" data-section="debug" aria-expanded="true"><span>关卡调试</span><span class="section-toggle-icon" aria-hidden="true">−</span></button><div class="slider"><label><span>敌人生命倍率</span><b id="enemy-hp-label">1.0x</b></label><input id="enemy-hp-slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div><div class="slider"><label><span>敌人攻击倍率</span><b id="enemy-atk-label">1.0x</b></label><input id="enemy-atk-slider" type="range" min="0.5" max="2" step="0.1" value="1" /></div><div class="slider"><label><span>初始生命</span><b id="hp-label">20</b></label><input id="hp-slider" type="range" min="1" max="100" step="1" value="20" /></div><div class="slider"><label><span>初始法力</span><b id="mana-label">2</b></label><input id="mana-slider" type="range" min="1" max="8" step="1" value="2" /></div><div><label style="display:block;color:var(--muted);font-size:11px;margin-bottom:6px">随机种子</label><input type="text" id="seed-input" value="001" /></div><div class="side-actions" style="margin-top:12px"><button class="button" id="apply-debug-btn">应用参数</button><button class="button" id="skip-wave-btn" disabled>跳过本波</button></div></section>
+        <section class="panel side-section"><button class="section-toggle" type="button" data-section="cards" aria-expanded="true"><span>牌库与功能</span><span class="section-toggle-icon" aria-hidden="true">−</span></button><div class="catalog-summary" id="catalog-counts"></div><div class="synth-list"><div class="recipe"><strong>带刺球棒 · 费用 2</strong><small>木棍 + 工具包 + 工作台<br/>5 发 × 8 点多弹道伤害；暴击时治疗 2 点</small></div><div class="recipe"><strong>火焰喷射器 · 费用 3</strong><small>打火机 + 能量饮料 + 工作台<br/>225 点伤害；有概率击退</small></div></div><button class="button primary" style="width:100%;margin-top:11px" id="synth-btn">查看完整分类、组合与镶嵌</button></section>
+        <section class="panel side-section wide"><button class="section-toggle" type="button" data-section="log" aria-expanded="true"><span>事件日志</span><span class="section-toggle-icon" aria-hidden="true">−</span></button><div class="log" id="log"></div></section>
       </aside>
     </section>
   </main>
 
-  <div class="modal-backdrop hidden" id="reward-modal"><div class="modal"><div class="modal-head"><div><h2 id="modal-title">关卡奖励</h2><p id="modal-subtitle">选择一项加入牌组，继续下一关。</p></div><button class="button" id="modal-close">关闭</button></div><div class="reward-grid" id="reward-grid"></div></div></div>
-  <div class="modal-backdrop hidden" id="synth-modal"><div class="modal"><div class="modal-head"><div><h2>合成检查</h2><p>根据当前牌库和已解锁功能判断可用配方。</p></div><button class="button" id="synth-close">关闭</button></div><div class="synth-list" id="synth-result"></div></div></div>
+  <div class="modal-backdrop hidden" id="reward-modal"><div class="modal"><div class="modal-head"><div><h2 id="modal-title">关卡奖励</h2><p id="modal-subtitle">选择一项加入牌组。</p></div><div><button class="button hidden" id="reroll-btn">重选（3）</button><button class="button hidden" id="modal-close">关闭</button></div></div><div class="reward-grid" id="reward-grid"></div></div></div>
+  <div class="modal-backdrop hidden" id="synth-modal"><div class="modal"><div class="modal-head"><div><h2>牌库与功能分类</h2><p>共 18 张战斗卡和 12 项功能；同时检查当前可用配方与宝石镶嵌。</p></div><button class="button" id="synth-close">关闭</button></div><div class="synth-list" id="synth-result"></div></div></div>
   <div class="toast hidden" id="toast"></div>
   <script src="app.js"></script>
 </body>
