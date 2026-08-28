@@ -147,7 +147,7 @@
     .slider { margin:10px 0 14px; }
     .slider label { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-bottom:6px; }
     input[type=range] { width:100%; accent-color:var(--green); }
-    input[type=text] { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 9px; background:#fff; }
+    input[type=text], input[type=number] { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 9px; background:#fff; }
     .side-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
     .synth-list { display:flex; flex-direction:column; gap:8px; }
     .recipe { border:1px solid #eadfc5; background:#fffaf0; border-radius:10px; padding:10px; }
@@ -181,6 +181,11 @@
     .modal-head { display:flex; justify-content:space-between; gap:14px; align-items:start; margin-bottom:15px; }
     .modal-head h2 { font-size:21px; letter-spacing:-.04em; }
     .modal-head p { color:var(--muted); font-size:12px; margin-top:4px; }
+    .seed-setup { display:grid; grid-template-columns:minmax(160px,1fr) auto; gap:9px 12px; align-items:end; margin:-2px 0 15px; padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .seed-setup label { color:var(--muted); font-size:11px; }
+    .seed-setup label input { margin-top:6px; }
+    .seed-setup-actions { display:flex; gap:7px; }
+    .seed-hand-preview { grid-column:1/-1; color:var(--green); font-size:12px; font-weight:800; }
     .reward-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
     .reward { border:1px solid var(--line); background:#fff; border-radius:11px; padding:11px; min-height:130px; text-align:left; }
     .reward:hover { border-color:var(--green); box-shadow:0 9px 16px rgba(23,34,31,.08); }
@@ -207,7 +212,7 @@
     .toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:20; background:var(--ink); color:#fff; padding:10px 15px; border-radius:999px; font-size:12px; box-shadow:var(--shadow); }
     .hidden { display:none !important; }
     @media (max-width: 1050px) { .layout { grid-template-columns:1fr; } .side { position:static; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); } .side .wide { grid-column:1 / -1; } }
-    @media (max-width: 680px) { .app-shell { padding:14px 10px 28px; } .topbar { align-items:flex-start; } .top-actions .pill { display:none; } .battle-head, .arena { padding-left:14px; padding-right:14px; } .battle-title { display:block; } .progress { margin-top:13px; min-width:0; } .player-zone { grid-template-columns:1fr; } .stat-grid { grid-template-columns:repeat(2,1fr); } .side { display:flex; } .reward-grid { grid-template-columns:1fr; } .enemy { width:calc(50% - 8px); min-width:130px; } .enemy.boss { width:100%; } .settlement-summary { grid-template-columns:repeat(2,1fr); } .gem-row, .catalog-row { grid-template-columns:1fr; gap:4px; } }
+    @media (max-width: 680px) { .app-shell { padding:14px 10px 28px; } .topbar { align-items:flex-start; } .top-actions .pill { display:none; } .battle-head, .arena { padding-left:14px; padding-right:14px; } .battle-title { display:block; } .progress { margin-top:13px; min-width:0; } .player-zone { grid-template-columns:1fr; } .stat-grid { grid-template-columns:repeat(2,1fr); } .side { display:flex; } .reward-grid { grid-template-columns:1fr; } .enemy { width:calc(50% - 8px); min-width:130px; } .enemy.boss { width:100%; } .settlement-summary { grid-template-columns:repeat(2,1fr); } .gem-row, .catalog-row, .seed-setup { grid-template-columns:1fr; gap:4px; } .seed-setup-actions { margin-top:6px; } }
   </style>
 </head>
 <body>
@@ -246,7 +251,7 @@
     </section>
   </main>
 
-  <div class="modal-backdrop hidden" id="reward-modal"><div class="modal"><div class="modal-head"><div><h2 id="modal-title">关卡奖励</h2><p id="modal-subtitle">选择一项加入牌组。</p></div><div><button class="button hidden" id="reroll-btn">重选（3）</button><button class="button hidden" id="modal-close">关闭</button></div></div><div class="reward-grid" id="reward-grid"></div></div></div>
+  <div class="modal-backdrop hidden" id="reward-modal"><div class="modal"><div class="modal-head"><div><h2 id="modal-title">关卡奖励</h2><p id="modal-subtitle">选择一项加入牌组。</p></div><div><button class="button hidden" id="reroll-btn">重选（3）</button><button class="button hidden" id="modal-close">关闭</button></div></div><div class="seed-setup hidden" id="seed-setup"><label>初始手牌种子<input type="number" id="arcana-seed-input" min="1" max="999999" step="1" value="1" /></label><div class="seed-setup-actions"><button class="button primary" id="apply-seed-btn">应用种子</button><button class="button" id="random-seed-btn">随机种子</button></div><div class="seed-hand-preview" id="seed-hand-preview">初始手牌：—</div></div><div class="reward-grid" id="reward-grid"></div></div></div>
   <div class="modal-backdrop hidden" id="synth-modal"><div class="modal"><div class="modal-head"><div><h2>牌库与功能分类</h2><p>共 18 张战斗卡和 12 项功能；同时检查当前可用配方与宝石镶嵌。</p></div><button class="button" id="synth-close">关闭</button></div><div class="synth-list" id="synth-result"></div></div></div>
   <div class="toast hidden" id="toast"></div>
   <script src="app.js"></script>

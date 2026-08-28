@@ -95,7 +95,8 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 function mulberry32(seed){return function(){let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
-function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(state.rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function shuffleWith(arr,rng){for(let i=arr.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function shuffle(arr){return shuffleWith(arr,state.rng);}
 function pushLog(text,kind=''){state.log.unshift({text,kind});state.log=state.log.slice(0,100);renderLog();}
 function toast(text){const el=$('toast');el.textContent=text;el.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.add('hidden'),1800);}
 function percentage(value){return `${Math.round(value*100)}%`;}
@@ -109,14 +110,16 @@ function aliveEnemies(){return state.enemies.filter((enemy)=>enemy.hp>0);}
 function frontRowIndex(){const rows=aliveEnemies().map((enemy)=>enemy.row);return rows.length?Math.min(...rows):-1;}
 function activeEnemies(){const row=frontRowIndex();return row<0?[]:aliveEnemies().filter((enemy)=>enemy.row===row);}
 function stableRoll(...parts){const text=parts.join('|');let hash=2166136261;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619);}return(hash>>>0)/4294967296;}
+function normalizeSeed(value){return Math.min(999999,Math.max(1,Math.floor(Number(value)||1)));}
+function initialHandForSeed(seed){const rng=mulberry32(normalizeSeed(seed));const deck=[...GAME_CONFIG.initial.deck];shuffleWith(deck,rng);shuffleWith(deck,rng);return Array.from({length:Math.min(GAME_CONFIG.initial.handSize,deck.length)},()=>deck.pop());}
 function randomRunSeed(){let seed=state.seed;while(seed===state.seed){if(globalThis.crypto?.getRandomValues){const value=new Uint32Array(1);globalThis.crypto.getRandomValues(value);seed=value[0]%999999+1;}else seed=Math.floor(Math.random()*999999)+1;}return seed;}
-function restartRun(){const seed=randomRunSeed();$('seed-input').value=String(seed);beginRun(seed);}
+function restartRun(){beginRun(randomRunSeed());}
 
 function beginRun(seed=1){
   state.phase='arcana';state.stage=0;state.wave=0;state.turn=1;state.maxHp=Number($('hp-slider').value)||GAME_CONFIG.initial.hp;state.hp=state.maxHp;
   state.maxMana=Number($('mana-slider').value)||GAME_CONFIG.initial.mana;state.mana=state.maxMana;state.maxHand=GAME_CONFIG.initial.handSize;
   state.defense=0;state.comboStep=0;state.comboMultiplier=1;state.exp=0;state.totalExp=0;state.level=1;state.xpThreshold=GAME_CONFIG.xp.thresholdBase;
-  state.seed=Math.max(1,Number(seed)||1);state.rng=mulberry32(state.seed);state.nextUid=1;state.busy=false;state.actionSeq=0;state.preview=null;
+  state.seed=normalizeSeed(seed);$('seed-input').value=String(state.seed);state.rng=mulberry32(state.seed);state.nextUid=1;state.busy=false;state.actionSeq=0;state.preview=null;
   state.kills=0;state.wavesReached=0;state.damage=0;state.taken=0;state.totalDamage=0;state.totalTaken=0;state.splashDamage=0;state.totalSplashDamage=0;state.overkill=0;state.totalOverkill=0;state.lastStageDamage=0;state.log=[];state.eventQueue=[];
   state.passives={};GAME_CONFIG.defaultArtifacts.forEach((id)=>{const effect=CARD_DATA[id].effect;state.passives[effect.key]=effect.value;});
   state.gems=[];state.deck=shuffle(GAME_CONFIG.initial.deck.map((id)=>makeCard(id)));state.hand=[];state.discard=[];state.destroyed=[];state.enemies=[];
@@ -124,7 +127,7 @@ function beginRun(seed=1){
   showArcanaChoice();renderAll();
 }
 function returnToSelection(){$('reward-modal').classList.add('hidden');$('synth-modal').classList.add('hidden');beginRun(Number($('seed-input').value)||state.seed||1);}
-function showArcanaChoice(){state.phase='arcana';state.busy=true;openChoiceModal('秘能三选一','选择本局核心能力；选定后直到本局结束不能更换。',GAME_CONFIG.arcanaPool,chooseArcana,{showReroll:false});}
+function showArcanaChoice(){state.phase='arcana';state.busy=true;openChoiceModal('秘能三选一','先确认种子与初始手牌，再选择本局核心能力。',GAME_CONFIG.arcanaPool,chooseArcana,{showReroll:false,showSeed:true});}
 function chooseArcana(id){if(state.phase!=='arcana')return;const card=CARD_DATA[id];applyPassive(card.effect.key,card.effect.value);pushLog(`本局秘能锁定：${card.source}`,'good');closeChoiceModal();state.busy=false;enterStage(0);}
 function enterStage(index){state.stage=index;state.wave=0;state.turn=1;state.mana=state.maxMana;state.preview=null;state.damage=0;state.taken=0;state.splashDamage=0;state.overkill=0;state.deck.push(...state.discard,...state.hand);state.discard=[];state.hand=[];shuffle(state.deck);drawToLimit();pushLog(`进入${STAGES[index].title}`,'good');startEncounter();}
 function startEncounter(){state.phase='player';state.busy=false;state.turn=1;state.mana=state.maxMana;state.preview=null;state.wavesReached+=1;spawnWave();drawToLimit();pushLog(`进入第 ${state.stage+1} 关 · 第 ${state.wave+1} 波战斗`,'good');renderAll();}
@@ -189,8 +192,11 @@ function showSettlement(mode){
   const actions=document.createElement('div');actions.className='settlement-actions';if(!isDefeat&&!isFinal)actions.append(makeActionButton('继续下一关',()=>{closeChoiceModal();state.stage+=1;state.busy=false;enterStage(state.stage);},true));else actions.append(makeActionButton('重新开始',()=>{closeChoiceModal();restartRun();},true));actions.append(makeActionButton('返回秘能选择',()=>{closeChoiceModal();returnToSelection();}));grid.append(actions);$('reward-modal').classList.remove('hidden');$('run-status').textContent=`RUN ${String(state.seed).padStart(3,'0')} · ${isDefeat?'失败':isFinal?'通关':'关卡完成'}`;
 }
 function makeActionButton(text,handler,primary=false){const button=document.createElement('button');button.className=`button${primary?' primary':''}`;button.textContent=text;button.onclick=handler;return button;}
+function updateInitialHandPreview(){const seed=normalizeSeed($('arcana-seed-input').value);const names=initialHandForSeed(seed).map((id)=>CARD_DATA[id].name);$('seed-hand-preview').textContent=`初始手牌：${names.join('、')}`;}
+function applySelectedSeed(){const seed=normalizeSeed($('arcana-seed-input').value);beginRun(seed);toast(`已应用种子 ${seed}`);}
+function useRandomSeed(){const seed=randomRunSeed();beginRun(seed);toast(`已随机种子 ${seed}`);}
 function openChoiceModal(title,subtitle,ids,onChoose,options={}){
-  $('modal-title').textContent=title;$('modal-subtitle').textContent=subtitle;$('modal-close').classList.add('hidden');$('reroll-btn').classList.toggle('hidden',!options.showReroll);const grid=$('reward-grid');grid.innerHTML='';
+  $('modal-title').textContent=title;$('modal-subtitle').textContent=subtitle;$('modal-close').classList.add('hidden');$('reroll-btn').classList.toggle('hidden',!options.showReroll);$('seed-setup').classList.toggle('hidden',!options.showSeed);if(options.showSeed){$('arcana-seed-input').value=String(state.seed);updateInitialHandPreview();}const grid=$('reward-grid');grid.innerHTML='';
   ids.forEach((id)=>{const card=CARD_DATA[id];const button=document.createElement('button');button.className=`reward ${card.type}`;button.innerHTML=`<div class="card-art ${card.type}"><span>${card.art}</span><span class="cost">${displayCost(card)}</span></div><strong>${card.name}</strong><small>${card.label}${card.rarity?` · ${card.rarity}`:''} · 原型：${card.source}</small><p>${card.desc}</p>${options.claimLabel?`<b>${options.claimLabel}</b>`:''}`;button.onclick=()=>onChoose(id);grid.append(button);});$('reward-modal').classList.remove('hidden');
 }
 function closeChoiceModal(){$('reward-modal').classList.add('hidden');}
@@ -237,6 +243,7 @@ function applyDebugSettings(){$('enemy-hp-label').textContent=`${Number($('enemy
 
 $('home-btn').onclick=returnToSelection;$('restart-btn').onclick=restartRun;$('end-turn-btn').onclick=endTurn;
 $('reroll-btn').onclick=rerollUpgrade;$('skip-wave-btn').onclick=skipWave;$('synth-btn').onclick=showSynthesis;$('synth-close').onclick=()=>$('synth-modal').classList.add('hidden');$('apply-debug-btn').onclick=applyDebugSettings;
+$('apply-seed-btn').onclick=applySelectedSeed;$('random-seed-btn').onclick=useRandomSeed;$('arcana-seed-input').oninput=updateInitialHandPreview;$('arcana-seed-input').onkeydown=(event)=>{if(event.key==='Enter')applySelectedSeed();};
 $('export-btn').onclick=()=>{const payload={exportedAt:new Date().toISOString(),config:{initial:{...GAME_CONFIG.initial,hp:Number($('hp-slider').value),mana:Number($('mana-slider').value)},combo:GAME_CONFIG.combo,xp:GAME_CONFIG.xp,itemRewardChance:GAME_CONFIG.itemRewardChance,debug:state.debug,enemyHpMultiplier:Number($('enemy-hp-slider').value),enemyAtkMultiplier:Number($('enemy-atk-slider').value)},result:{stage:state.stage+1,wave:state.wave+1,turn:state.turn,hp:state.hp,maxHp:state.maxHp,maxMana:state.maxMana,maxHand:state.maxHand,level:state.level,exp:state.exp,totalExp:state.totalExp,kills:state.kills,wavesReached:state.wavesReached,totalDamage:state.totalDamage,splashDamage:state.totalSplashDamage,overkill:state.totalOverkill,totalTaken:state.totalTaken,seed:state.seed},zones:{deck:state.deck,hand:state.hand,discard:state.discard,destroyed:state.destroyed,gems:state.gems},log:state.log.map((entry)=>entry.text)};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const anchor=document.createElement('a');anchor.href=URL.createObjectURL(blob);anchor.download=`card-balance-run-${String(state.seed).padStart(3,'0')}.json`;anchor.click();URL.revokeObjectURL(anchor.href);toast('日志已导出');};
 $('enemy-hp-slider').oninput=(event)=>$('enemy-hp-label').textContent=`${Number(event.target.value).toFixed(1)}x`;$('enemy-atk-slider').oninput=(event)=>$('enemy-atk-label').textContent=`${Number(event.target.value).toFixed(1)}x`;$('hp-slider').oninput=(event)=>$('hp-label').textContent=event.target.value;$('mana-slider').oninput=(event)=>$('mana-label').textContent=event.target.value;
 $('damage-bonus-slider').oninput=(event)=>$('damage-bonus-label').textContent=`+${event.target.value}%`;$('shots-slider').oninput=(event)=>$('shots-label').textContent=`+${event.target.value}`;$('splash-slider').oninput=(event)=>$('splash-label').textContent=`+${event.target.value}%`;$('splash-divisor-slider').oninput=(event)=>$('splash-divisor-label').textContent=event.target.value;
